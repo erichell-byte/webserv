@@ -1,0 +1,124 @@
+@charset "utf-8";
+
+img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
+h1 {
+    text-transform: uppercase;
+    font-family: helvetica neue, serif;
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: 0.025em;
+    line-height: 1.5em;
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    color: #050505;
+}
+
+h2 {
+    text-transform: uppercase;
+    font-family: helvetica neue, serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 0.025em;
+    line-height: 1.5em;
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    color: #34559d;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /*text-align: center;*/
+    min-height: 100vh;
+    font-family: helvetica neue, serif;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.025em;
+    padding-left: 1em;
+    color: rgb(201, 209, 212);
+}
+
+.error {
+    background: linear-gradient(130deg, rgb(184, 106, 131) 0%, rgb(188, 130, 45) 100%);
+}
+
+.success {
+    background: linear-gradient(130deg, rgb(201, 209, 212) 0%, rgb(35, 78, 0) 100%);
+}
+
+p {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.025em;
+    line-height: 1.5em;
+    color: #020000;
+    padding-bottom: 5px;
+}
+
+label {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.025em;
+    line-height: 1.5em;
+    color: #69bc3b;
+    padding-bottom: 5px;
+}
+
+a {
+    font-size: 15px;
+    font-weight: 300;
+    letter-spacing: 0.025em;
+    line-height: 1.5em;
+    position: relative;
+    text-decoration: none;
+    background-color: #cfb053;
+    transition: 0.8s;
+}
+
+a:hover {
+    font-size: 20px;
+    transition: 0.4s;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    visibility: hidden;
+}
+
+li {
+    padding-bottom: 8px;
+}
+
+.markError {
+    background-color: white;
+    color: rgb(225, 20, 61);
+}
+
+.markSuccess {
+    background-color: white;
+    color: rgb(33, 99, 134);
+}
+
+#Box {
+    border: 0;
+    /*width: 720px;*/
+    width: 70vw;
+    height: auto;
+    margin: 0 auto 0 auto;
+    padding: 0;
+    text-align: left;
+}
+
+::selection {
+    color: black;
+    background: white;
+}

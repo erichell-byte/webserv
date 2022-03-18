@@ -1,0 +1,78 @@
+
+server{
+        host 127.0.0.1;
+	port 5000;
+        server_names www.ya.ru ya.com;
+        error_page 404 /custom_404.html;
+        error_page 500 502 503 504 /custom_50x.html;
+        client_max_body_size 3000;
+        location {
+                URI /custom_404.html;
+                root /usr/share/nginx/html;
+        }
+
+        location {
+                URI /custom_50x.html;     
+                root /usr/share/nginx/html;
+                index html;
+        }
+
+        location {
+                URI /;
+                index index.html;
+                autoindex on;
+                proxy_pass http://localhost:8080/;
+                root /Users/erichell/Downloads/webserverToSend/www/;
+                limit_except GET; 
+                }
+
+        location  {
+                URI /upload; 
+                upload_store /tmp;
+                }
+                
+        location {
+                URI /q;
+                fastcgi_pass localhost:9000;
+                }
+        location {
+                URI /autoindex;
+                root /Users/erichell/Downloads/webserverToSend;
+                fastcgi_pass localhost:9000;
+                }
+        location {
+                URI /auth;
+                index auth.html;
+                root /Users/erichell/Downloads/webserverToSend/www/;
+                fastcgi_pass localhost:9000;
+                auth test:test;
+		limit_except GET;
+                }
+        location {
+                URI /php
+                limit_except GET, POST;
+    	        root /Users/erichell/Downloads/webserverToSend/www/;
+    	        index post.html;
+        }
+    }
+}
+
+
+server{
+        host 127.0.0.1;;
+	port 5005;
+        server_names www.ya.ru ya.com;
+        error_page 500 502 503 504 /custom_50x.html;
+        client_max_body_size 3000;
+        location {
+                URI   /custom_404.html;
+                root /usr/share/nginx/html;
+        }
+
+        location  {
+                URI     /custom_50x.html;
+                root    /usr/share/nginx/html;
+                index   html;
+                autoindex on;
+        }
+}

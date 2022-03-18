@@ -1,0 +1,19 @@
+curl --resolve example.com:8080:127.0.0.1 http://example.com:8080
+siege http://localhost:8080 -b -d0.4 -r25
+
+import requests
+from requests.auth import HTTPBasicAuth
+
+def printResponse(r):
+	print("==STATUSCODE==")
+	print(r.status_code)
+	print("==HEADERS==")
+	print(r.headers)
+	print("==BODY==")
+	print(r.text)
+	print("******************\n")
+
+r = requests.post('http://localhost:8080/php', data={'login':'admin', 'pass':'password'})
+printResponse(r)
+
+curl -X GET http://localhost:8080/mycgi/mycgi.out

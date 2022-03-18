@@ -1,0 +1,19 @@
+Проверить корректность запроса через httpbin.org
+
+printf 'GET /get HTTP/1.1\r\nHost:httpbin.org\r\n\r\n' | nc -v httpbin.org 80 
+printf 'POST /post HTTP/1.1\r\nHost:httpbin.org\r\nContent-Length:3\r\n\r\naaa\r\n\r\n' | nc -v httpbin.org 80 
+printf 'POST /post HTTP/1.1\r\nHost:httpbin.org\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n' | nc -v httpbin.org 80 
+
+
+Отправить запросы на наш сервер
+
+printf 'POST / HTTP/1.1\r\nHost:127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n' | nc -v 127.0.0.1 5000 
+printf 'POST / HTTP/1.1\r\nHost:127.0.0.1\r\nContent-Length:51\r\n\r\na b c d e f g h i j k l m n o p q r s t u v w x y z\r\n\r\n' | nc -v 127.0.0.1 5000  
+
+// следующий запрос пока падает во время подготовки ответа
+printf 'GET /get HTTP/1.1\r\nHost:127.0.0.1\r\n\r\n' | nc -v 127.0.0.1 5000 
+
+
+
+Источник:
+https://stackoverflow.com/questions/5725430/http-test-server-accepting-get-post-requests

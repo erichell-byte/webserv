@@ -32,9 +32,13 @@ class ResponseMessage
         void CheckLocation();
         void PrepareGet(RequestMessage &requestMessage, server &servers);
         void PreparePost(RequestMessage &requestMessage, server &servers);
+        void ClearAll(Client &client);
         std::string getAnswerNum(void);
         std::string to_string(int n);
         int ExecCgi(Client &client);
+        void ReadFile(Client &client);
+        void ParseResultCgi(Client &client);
+        void setErrorPage(int ErrorNum);
         char **setEnv(Client &client);
         ResponseMessage();
         ~ResponseMessage();

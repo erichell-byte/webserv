@@ -79,23 +79,12 @@ void ResponseMessage::setErrorPage(int ErrorNum)
 
 void ResponseMessage::ParseResultCgi(Client &client)
 {
-    char buf1[500];
     int tmp;
     size_t pos;
 	std::string headers;
 	std::string key;
 	std::string value;
 
-    // memset(buf1, '\0', 500);
-    // while ((tmp = read(client.read_fd, buf1, 500)) != 0)
-    // {
-    //     if (tmp < 0)
-    //     {
-    //         std::cout << "Error with parcing CGI" << std::endl;
-    //         return ;
-    //     }    
-    // }
-    // std::string body(buf1);
 	if (this->bodyResponse.find("\r\n\r\n") == std::string::npos)
 		return;
 	headers = this->bodyResponse.substr(0, this->bodyResponse.find("\r\n\r\n") + 1);
@@ -125,7 +114,7 @@ void ResponseMessage::ParseResultCgi(Client &client)
 	this->bodyResponse = this->bodyResponse.substr(pos);
     this->headerResponse = "HTTP/1.1 " + this->answerNum + "\nContent-Length:" + to_string(this->bodyResponse.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
     this->fullResponse = this->headerResponse + this->bodyResponse;
-    std::cout << "HELIOSSSSS" << this->fullResponse << std::endl;
+    
     // body.clear();
     headers.clear();
     key.clear();
@@ -214,12 +203,12 @@ void ResponseMessage::ReadFile(Client &client)
 		tmpBuffer[result] = '\0';
 	std::string tmp(tmpBuffer, result);
 	this->bodyResponse += tmp;
-	// if (result == 0)
-	// {
+	if (result == 0)
+	{
 	    close(client.read_fd);
 	    unlink(TMP_PATH);
 	    client.read_fd = -1;
-	// }
+	}
 
 }
 

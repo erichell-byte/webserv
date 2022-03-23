@@ -7,6 +7,7 @@
 #include "client.hpp"
 
 #define TMP_PATH	"/tmp/cgi.tmp"
+#define BUFFER_SIZE 32767
 enum 
 {
     GET,
@@ -24,22 +25,23 @@ class ResponseMessage
         std::string fullResponse;
         std::string answerNum;
         std::string contentType;
+        bool isValid;
         parser parser;
     public:
         std::string PrepareResponse(Client &client,std::vector<server> &servers);
         void        setResponse(std::string &resp);
-        std::string getResponse();
+        std::string getFullResponse();
         void CheckLocation();
         void PrepareGet(RequestMessage &requestMessage, server &servers);
         void PreparePost(RequestMessage &requestMessage, server &servers);
         void ClearAll(Client &client);
         std::string getAnswerNum(void);
         std::string to_string(int n);
-        int ExecCgi(Client &client);
+        int ExecCgi(Client &client, server server);
         void ReadFile(Client &client);
         void ParseResultCgi(Client &client);
-        void setErrorPage(int ErrorNum);
         char **setEnv(Client &client);
+        bool CheckSyntaxRequest(Client &client);
         ResponseMessage();
         ~ResponseMessage();
         void generateAutoindex(std::string itl, char *buffer);

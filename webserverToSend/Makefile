@@ -7,15 +7,15 @@ RM = rm -f
 FILES =  $(wildcard $/*.cpp)
 OBJS = $(FILES:%.cpp=%.o)
 PWD = $(shell pwd)
-
+CONFIG	= server_settings.txt
 %.o: %.cpp %.hpp
 	$(CXX) $(CXXLAGS) -c $< -o $@
 
 $(NAME): $(OBJS) 
 	$(CXX) $(CXXLAGS) $(OBJS) -o $(NAME)
 
-all: $(NAME)
-##sed 's=PWD=$(PWD)=g' > ./www/server_settings.txt
+all: $(NAME) $(CONFIG)
+	@cat default.txt | sed 's=PWD=$(PWD)=g' > server_settings.txt
 
 clean:
 	$(RM) $(OBJS)

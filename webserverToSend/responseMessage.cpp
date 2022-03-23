@@ -26,7 +26,14 @@
 
 ResponseMessage::ResponseMessage(){}
 
-ResponseMessage::~ResponseMessage(){}
+ResponseMessage::~ResponseMessage()
+{
+    this->fullResponse.clear();
+    this->answerNum.clear();
+    this->bodyResponse.clear();
+    this->contentType.clear();
+    this->headerResponse.clear(); 
+}
 
 char **ResponseMessage::setEnv(Client &client)
 {
@@ -40,7 +47,7 @@ char **ResponseMessage::setEnv(Client &client)
     envMap["REQUEST_METHOD"] = client.request.method;
     envMap["REMOTE_ADDR"] = client.request.headers["Host"].substr(0,client.request.headers["Host"].find_last_of(":"));
     envMap["PATH_INFO"] = client.request.target;
-    envMap["PATH_TRANSLATED"] = "/Users/erichell/GIT/webserverToSend/www/post.php";
+    envMap["PATH_TRANSLATED"] = "post.php";
     envMap["CONTENT_LENGTH"] = std::to_string(0);
     if (client.request.target.find('?') != std::string::npos)
 		envMap["QUERY_STRING"] = client.request.target.substr(client.request.target.find('?') + 1);
@@ -48,7 +55,7 @@ char **ResponseMessage::setEnv(Client &client)
 		envMap["QUERY_STRING"];
     if (client.request.headers.find("Content-Type") != client.request.headers.end())
 		envMap["CONTENT_TYPE"] = client.request.headers["Content-Type"];
-    envMap["SCRIPT_NAME"] = "/Users/erichell/GIT/webserverToSend/www/post.php";
+    envMap["SCRIPT_NAME"] = "post.php";
     envMap["SERVER_PORT"] = client.request.headers["Host"].substr(client.request.headers["Host"].find_first_of(":"));
     if (client.request.target.find(".php") != std::string::npos)
         envMap["REDIRECT_STATUS"] = "200";
@@ -71,11 +78,6 @@ char **ResponseMessage::setEnv(Client &client)
 	env[i] = NULL;
 	return (env);
 }
-
-void ResponseMessage::setErrorPage(int ErrorNum)
-{
-
-} 
 
 void ResponseMessage::ParseResultCgi(Client &client)
 {
@@ -121,15 +123,7 @@ void ResponseMessage::ParseResultCgi(Client &client)
     value.clear();
 }
 
-void ResponseMessage::ClearAll(Client &client)
-{
-    this->answerNum.clear();
-    this->bodyResponse.clear();
-    this->contentType.clear();
-    this->headerResponse.clear(); 
-}
-
-int ResponseMessage::ExecCgi(Client &client)
+int ResponseMessage::ExecCgi(Client &client, server server)
 {
     char **args = nullptr;
 	char **env = nullptr;
@@ -137,10 +131,15 @@ int ResponseMessage::ExecCgi(Client &client)
 	int ret;
 	int tubes[2];
     int cgiStatus = 0;
-    // chdir("/Users/erichell/Downloads/webserverToSend/www");
+    // for (std::vector<location>::const_iterator it = server.locations.begin(); // переходим в папку со скриптом
+    // it != server.locations.end(); ++it)
+    // {
+    //     if (it->locationURI == "/" && it->root != "")
+    //         chdir(it->root.c_str());
+    // }
     args = (char **) (malloc(sizeof(char *) * 3));
 	args[0] = strdup(path.c_str()); // путь "/usr/bin/php"
-	args[1] = strdup("/Users/erichell/GIT/webserverToSend/www/post.php"); // полный путь до скрипта
+	args[1] = strdup("post.php"); // полный путь до скрипта
 	args[2] = nullptr;
     env = setEnv(client);
     client.tmp_fd = open(TMP_PATH, O_WRONLY | O_CREAT, 0666);
@@ -162,11 +161,11 @@ int ResponseMessage::ExecCgi(Client &client)
 		}
     }
     else
-    {   waitpid(client.cgi_pid, 0 ,0);
+    {   
+        waitpid(client.cgi_pid, &cgiStatus ,0);
         close(tubes[0]);
         client.write_fd = tubes[1];
-        client.read_fd = open(TMP_PATH, O_RDONLY);
-        
+        client.read_fd = open(TMP_PATH, O_RDONLY); 
     }
     freeAll(args, env);
 }
@@ -174,7 +173,7 @@ int ResponseMessage::ExecCgi(Client &client)
 
 void ResponseMessage::ReadFile(Client &client)
 {
-    char tmpBuffer[32676];
+    char tmpBuffer[BUFFER_SIZE];
 	int result;
 	int cgiStatus = 0;
 
@@ -198,7 +197,7 @@ void ResponseMessage::ReadFile(Client &client)
 	// 		}
 	// 	}
 	// }
-    result = read(client.read_fd, tmpBuffer, 32676);
+    result = read(client.read_fd, tmpBuffer, BUFFER_SIZE);
 	if (result >= 0)
 		tmpBuffer[result] = '\0';
 	std::string tmp(tmpBuffer, result);
@@ -206,10 +205,24 @@ void ResponseMessage::ReadFile(Client &client)
 	if (result == 0)
 	{
 	    close(client.read_fd);
-	    unlink(TMP_PATH);
 	    client.read_fd = -1;
 	}
+    unlink(TMP_PATH);
+}
 
+bool ResponseMessage::CheckSyntaxRequest(Client &client)
+{
+    if (client.request.method.size() == 0 || client.request.target.size() == 0)
+		return (false);
+	if (client.request.method != "GET" && client.request.method != "POST"
+		&& client.request.method != "DELETE")
+		return (false);
+	if (client.request.protocolVersion != "HTTP/1.1\r" && client.request.protocolVersion != "HTTP/1.1")
+		return (false);
+	if (client.request.headers.find("Host") == client.request.headers.end())
+		return (false);
+    // if ()
+	return (true);
 }
 
 std::string ResponseMessage::PrepareResponse(Client &client,std::vector<server> &servers)
@@ -218,44 +231,76 @@ std::string ResponseMessage::PrepareResponse(Client &client,std::vector<server> 
     std::ifstream inf;
     std::string serverHost;
     RequestMessage requestMessage = client.request;
+    std::string buf;
     this->fullResponse.clear();
     int i = 0;
-    for (std::vector<server>::const_iterator it = servers.begin(); it != servers.end(), i <= servers.size(); ++it, ++i)
+    if (!CheckSyntaxRequest(client)) // обработка корректного реквеста и выдача 400 ошибки (искать инфу в проекте донор по поиску BAD) добавить проверку тела запроса и content length <= 0
     {
-        serverHost = servers[i].host + ":" + std::to_string(servers[i].port);
-        if (requestMessage.headers.find("Host")->second == serverHost)
-        {
-            // client.request.headers["Root"] = servers[i]
-            if (client.request.target.find("post.php") != std::string::npos)
+            inf.open("www/400.html");
+            if (inf.is_open())
             {
-                ExecCgi(client);
-                ReadFile(client);
-                ParseResultCgi(client);
+                getline (inf, buf, '\0');
+                inf.close();
+                this->answerNum = "400 Bad Request";
+                this->contentType = "text/html";
+                this->headerResponse = "HTTP/1.1 " + this->answerNum + "\nContent-Length:" + to_string(buf.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
+                this->fullResponse = this->headerResponse + buf;
+                buf.clear();
+                return (getFullResponse());
             }
-            else if (requestMessage.method == "GET")
-            {
-                // if (requestMessage.target == "/autoindex"){
-                //     autoindexGet(requestMessage, servers[i]);
-                //     return (getResponse());
-                // }
-
-                PrepareGet(requestMessage, servers[i]);
-            }
-            else if (requestMessage.method == "POST")
-            {
-                // добавить проверку разрешен ли метод
-                // если не content type в запросе выдать ошибку
-                // проверяем длину контента, если 0 то выдаем 411 ошибку
-                // проверяем длину контента если она больше заданной в конфиге  и данные не чанкед выкидываем 413 ошибку
-                PreparePost(requestMessage, servers[i]);
-            }
-            ClearAll(client);
-            return (getResponse());
-        }
-            
-
-
     }
+    else 
+        for (std::vector<server>::const_iterator it = servers.begin(); it != servers.end(), i <= servers.size(); ++it, ++i)
+        {
+            serverHost = servers[i].host + ":" + std::to_string(servers[i].port);
+            if (requestMessage.headers.find("Host")->second == serverHost)
+            {
+                if (client.request.target.find("post.php") != std::string::npos)
+                {
+                    ExecCgi(client, servers[i]);
+                    ReadFile(client);
+                    ParseResultCgi(client);
+                }
+                else if (requestMessage.method == "GET")
+                {
+                    // if (requestMessage.target == "/autoindex"){
+                    //     autoindexGet(requestMessage, servers[i]);
+                    //     return (getResponse());
+                    // }
+
+                    PrepareGet(requestMessage, servers[i]);
+                }
+                else if (requestMessage.method == "POST")
+                {
+                    // если не content type в запросе выдать ошибку
+                    // проверяем длину контента, если 0 то выдаем 411 ошибку
+                    // проверяем длину контента если она больше заданной в конфиге  и данные не чанкед выкидываем 413 ошибку
+                    PreparePost(requestMessage, servers[i]);
+                }
+                if (this->answerNum == "404")
+                {
+                    for (std::vector<location>::const_iterator it = servers[i].locations.begin(); // переходим в папку со скриптом
+                    it != servers[i].locations.end(); ++it)
+                    {
+                        if (it->locationURI == "/" && it->root != "")
+                            chdir(it->root.c_str());
+                    }
+                    inf.open("404.html");
+                    if (inf.is_open())
+                    {
+                        getline (inf, buf, '\0');
+                        inf.close();
+                        this->answerNum = "404 Not Found";
+                        this->contentType = "text/html";
+                        this->headerResponse = "HTTP/1.1 " + this->answerNum + "\nContent-Length:" + to_string(buf.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
+                        this->fullResponse = this->headerResponse + buf;
+                        buf.clear();
+                        return (getFullResponse());
+                    }
+                }
+               return (getFullResponse());
+            }
+        }
 }
 void* thread_for_dowland(void* response)
 {
@@ -311,7 +356,7 @@ void ResponseMessage::PrepareGet(RequestMessage &requestMessage, server &servers
         file = requestMessage.target.substr(requestMessage.target.find_last_of('/') + 1, requestMessage.target.find('?'));
         temp = requestMessage.target;
         strcpy(buf1,requestMessage.target.c_str());
-        if (strstr(buf1, "/autoindex") != nullptr){
+        if (strstr(buf1, "/autoindex") != nullptr){ // Aвтоиндекс
             char *path = "www";
             generateAutoindex(it->locationURI, path);
         }
@@ -322,26 +367,23 @@ void ResponseMessage::PrepareGet(RequestMessage &requestMessage, server &servers
             strcpy(buf3,buf2.c_str());
             generateAutoindex(it->locationURI, buf3);
         }
-        else if (requestMessage.target == it->locationURI)
+        else if (requestMessage.target == it->locationURI) // через GET отдаем страницы
         {   
             if (it->root.c_str() != nullptr)
                 chdir(it->root.c_str());
             inf.open(it->index);
-            if (inf.is_open())
-            {
-                getline (inf, buf, '\0');
-                inf.close();
-                this->answerNum = "200";
-                this->contentType = "text/html";
-                this->headerResponse = "HTTP/1.1 " + this->answerNum + " OK\nContent-Length:" + to_string(buf.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
-                this->fullResponse = this->headerResponse + buf;
-                buf.clear();
-                return;
-            }
-            else
-                return(setErrorPage(404));
+            // if (inf.is_open())
+            // {
+            getline (inf, buf, '\0');
+            inf.close();
+            this->answerNum = "200";
+            this->contentType = "text/html";
+            this->headerResponse = "HTTP/1.1 " + this->answerNum + " OK\nContent-Length:" + to_string(buf.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
+            this->fullResponse = this->headerResponse + buf;
+            buf.clear();
+            return;
         }
-        else if (requestMessage.target == "/stylesheet.css")
+        else if (requestMessage.target == "/stylesheet.css") // файл стилей
         {
             if (it->root.c_str() != nullptr)
                 chdir(it->root.c_str());
@@ -354,19 +396,27 @@ void ResponseMessage::PrepareGet(RequestMessage &requestMessage, server &servers
             this->fullResponse = this->headerResponse + buf;
             return;
         }
-        // else
-        // {
-        //     inf.open("/Users/erichell/WEBSERVER/webserv/www/custom_404.html");
-        //     getline (inf, buf, '\0');
-        //     inf.close();
-        //     this->contentType = "text/html";
-        //     this->answerNum = "404";
-        //     this->headerResponse = "HTTP/1.1 " + this->answerNum + " OK\nContent-Length:" + to_string(buf.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
-        //     buf = this->headerResponse + buf;
-        //     setResponse(buf);
-
-        // }
+        else if (requestMessage.target == "/favicon.ico")
+        {
+        //     char tmpBuffer[BUFFER_SIZE + 1];
+	    //     int result;
+        //     int fav_fd;
+        //     if (it->root.c_str() != nullptr)
+        //         chdir(it->root.c_str());
+        //     fav_fd = open("favicon.ico", 0666);
+        //     result = read(fav_fd, tmpBuffer, BUFFER_SIZE);
+	    //     if (result >= 0)
+		//         tmpBuffer[result] = '\0';
+	    //     std::string tmp(tmpBuffer, result);
+	    //     this->bodyResponse += tmp;
+        //     this->contentType = "application/octet-stream";
+        //     this->answerNum = "200";
+        //     this->headerResponse = "HTTP/1.1 " + this->answerNum + " OK\nContent-Length:" + to_string(this->bodyResponse.size()) + "\r\nContent-Type: " + this->contentType + "\r\n\r\n";
+        //     this->fullResponse = this->headerResponse + this->bodyResponse;
+            return ;
+        }
     }
+    this->answerNum = "404";
 }
 
 std::string ResponseMessage::getAnswerNum(void)
@@ -380,7 +430,7 @@ void    ResponseMessage::setResponse(std::string &resp)
     this->fullResponse = resp;
 }
 
- std::string ResponseMessage::getResponse()
+ std::string ResponseMessage::getFullResponse()
  {
      return (this->fullResponse);
  }

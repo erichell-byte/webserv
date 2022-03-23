@@ -22,7 +22,7 @@ server{
                 index index.html;
                 autoindex on;
                 proxy_pass http://localhost:8080/;
-                root /Users/erichell/GIT/webserverToSend/www/;
+                root PWD/www/;
                 limit_except GET; 
                 }
 
@@ -37,13 +37,13 @@ server{
                 }
         location {
                 URI /autoindex;
-                root /Users/erichell/GIT/webserverToSend/www;
+                root PWD/www;
                 fastcgi_pass localhost:9000;
                 }
         location {
                 URI /auth;
                 index auth.html;
-                root /Users/erichell/GIT/webserverToSend/www/;
+                root PWD/www/;
                 fastcgi_pass localhost:9000;
                 auth test:test;
 		limit_except GET;
@@ -51,7 +51,7 @@ server{
         location {
                 URI /php
                 limit_except GET, POST;
-    	        root /Users/erichell/GIT/webserverToSend/www/;
+    	        root PWD/www/;
     	        index post.html;
         }
     }
